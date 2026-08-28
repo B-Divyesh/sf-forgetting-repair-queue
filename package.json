@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build && node scripts/inject-sw.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/inline-shell.mjs && node scripts/inject-sw.mjs",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run",
+    "test": "vitest run src",
     "test:e2e": "playwright test",
     "test:all": "npm test && npm run build && npm run test:e2e"
   },

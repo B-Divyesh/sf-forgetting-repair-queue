@@ -41,7 +41,7 @@ test('imports a sample, explains the rank, and saves a repair', async ({ page })
 test('reports malformed or unmapped data with a next step', async ({ page }) => {
   await page.getByText('Or paste CSV text').click();
   await page.getByLabel('CSV or tab-separated text').fill('foo,bar\none,two');
-  await page.getByRole('button', { name: 'Preview columns' }).click();
+  await page.getByRole('button', { name: 'Preview pasted CSV columns' }).click();
   await expect(page.getByRole('alert')).toContainText('Include a header such as Front');
 });
 
@@ -69,14 +69,14 @@ test('reopens a saved queue while offline', async ({ page, context }) => {
   await page.getByRole('button', { name: 'Try a sample file' }).click();
   await page.getByRole('button', { name: /Build the repair queue/ }).click();
   await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.waitForFunction(() => navigator.serviceWorker.controller?.state === 'activated');
-  await page.waitForTimeout(500);
-  await page.reload();
-  await expect(page.getByRole('heading', { level: 2, name: 'Flagged cards' })).toBeVisible();
+  const reopened = await context.newPage();
+  await reopened.goto('/');
+  await expect(reopened.getByRole('heading', { level: 2, name: 'Flagged cards' })).toBeVisible();
+  await reopened.waitForFunction(async () => Boolean(navigator.serviceWorker.controller && await caches.match('/index.html')));
   await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Repair Queue' })).toBeVisible();
-  await expect(page.getByText('Offline · changes save locally')).toBeVisible();
+  await reopened.reload();
+  await expect(reopened.getByRole('heading', { level: 1, name: 'Repair Queue' })).toBeVisible();
+  await expect(reopened.getByText('Offline · changes save locally')).toBeVisible();
 });
 
 test('serves privacy and terms as standalone accessible pages', async ({ page }) => {
