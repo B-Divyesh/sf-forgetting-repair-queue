@@ -1,0 +1,14 @@
+{
+  "slug": "forgetting-repair-queue",
+  "title": "Repair Queue",
+  "artifact_class": "pwa-offline",
+  "job": "Import Anki card or review history, find prompts with a high recent failure ratio or slow responses, and work through revise, split, suspend, or archive decisions without changing the original export.",
+  "user": "Self-learners with established decks who want objective signals about which prompts need repair.",
+  "success_measure": "Repair 15 flagged cards and reduce their flagged-card failure rate by 20% after four weeks.",
+  "constraints": [
+    "All study history stays on the device",
+    "Scoring must be explainable",
+    "Do not make health or learning-disability claims",
+    "Preserve original imports byte-for-byte"
+  ]
+}
