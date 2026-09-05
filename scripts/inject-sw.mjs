@@ -12,7 +12,7 @@ async function walk(directory) {
 }
 
 const files = (await walk(rootPath))
-  .filter((file) => !file.endsWith('.map') && !file.endsWith('sw.js') && !file.includes(`${sep}.vite${sep}`))
+  .filter((file) => !file.endsWith('.map') && !file.endsWith('sw.js') && !file.endsWith('staticwebapp.config.json') && !file.includes(`${sep}.vite${sep}`))
   .map((file) => `/${relative(rootPath, file).split(sep).join('/')}`)
   .sort();
 const precache = [...new Set(['/','/index.html', ...files])];
