@@ -69,3 +69,20 @@ The deployed response has no enforcing CSP, no `X-Frame-Options`, and no CSP `fr
 - This is a browser PWA, not a library/CLI or application backend; no pack/install, persistence-concurrency, or health endpoint checks apply.
 - The factory `verify-url.sh` referenced in the supplied accessibility instructions is not present in this repository; equivalent title/lang/main/alt/console checks were performed with a fresh live browser session.
 
+---
+
+## Repair verification — 2026-09-05
+
+The recorded release blockers and both minor deployment findings were rechecked after implementation `056be8afa9da8e0eda29ac285b32f45a3860a4ed`.
+
+**Result: PASS.**
+
+- `.factory/claims.json` exists. Its eight commands have one tagged Playwright outcome test each. The documented `npm ci`, each claim command, and final `npm run test:all` passed.
+- A clean landing-page click on **Try it with sample data** immediately opened the labeled, ranked queue. No preview/build confirmation appears in the path.
+- Demo state is isolated under IndexedDB `demo:active`; a browser test created a real one-card queue, changed the sample queue, left demo, and observed the unchanged real queue.
+- The live response now has enforcing CSP, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, and immutable caching for hashed assets. The install manifest is live as `/manifest.json` with `application/json`.
+- Production root HTML byte-matches the final `dist/index.html` (SHA-256 `33af928afd5097577078f62861c8f62aa50704315e3195ed2104e28fa32ac408`). `/demo`, legal routes, robots, sitemap, and the designed HTTP 404 route were checked.
+- Fresh desktop and iPhone 13 contexts confirmed the first-read job/audience/action, one-click labeled sample queue, zero serious/critical axe issues, no console/page errors, and no cross-origin requests during the sample flow.
+- A fresh live context cached the service-worker shell, went offline, reloaded `/demo`, and showed `Offline · changes save locally` with the persistent demo label.
+
+The only unexecuted external path is a paid checkout/entitlement; it is a billing-operator dependency, not a free-core product defect.
