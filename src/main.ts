@@ -74,7 +74,7 @@ function shell(content: string, workbench = false): string {
     ${content}
     <footer>
       <span>Repair Queue · repair flashcard prompts from local exports</span>
-      <span>Original hero artwork generated for this product · <a href="/privacy/">privacy</a></span>
+      <span>Original hero artwork generated for this product · <a href="/privacy/">privacy</a> · Built by Param Factory · build 1.0.1</span>
     </footer>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 }
