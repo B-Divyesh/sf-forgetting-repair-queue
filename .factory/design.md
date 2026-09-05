@@ -64,5 +64,6 @@ Motion has editorial physical logic: the scene settles by 10px on first view (24
 - Negative list: no people, hands, faces, letters, numbers, logos, watermarks, UI screenshots, neon gradients, glossy 3D plastic, medical symbolism.
 - Full generation prompt is stored beside the source image in `assets/src/card-orchard.prompt.json`.
 - Generator: Azure OpenAI factory image deployment via `/opt/fleet/lib/gen-image.sh`; generated 2026-08-28. Original work produced for this product. No third-party visual assets.
+- `public/art/repair-queue-social.jpg` is a 1200×630 editorial crop of that same generated source, created locally on 2026-09-05 for social metadata. It introduces no new external asset or license.
 
 Hand-authored SVG icons and PWA marks use the same card/notch geometry. Generated imagery is disclosed in the site footer.

@@ -22,6 +22,7 @@ let unlocked = false;
 let licenseNotice = '';
 let draft: Repair | null = null;
 let undoState: { previous: Repair | null; saved: Repair } | null = null;
+let demoMode = location.pathname === '/demo' || new URLSearchParams(location.search).get('demo') === '1';
 
 const sample = `card_id,deck,front,back,recent_reviews,recent_failures,average_ms
 101,World history,"What happened in 1789?","The French Revolution began",12,7,14800
@@ -64,21 +65,22 @@ function shell(content: string, workbench = false): string {
     <header class="site-header ${workbench ? 'site-header--work' : ''}">
       <a class="wordmark" href="/" data-action="home" aria-label="Repair Queue home">${icon('mark')}<span>Repair Queue</span></a>
       <nav aria-label="Utility navigation">
-        <span class="privacy-claim"><span class="privacy-dot" aria-hidden="true"></span> Local only</span>
+        <a href="/demo" data-action="open-demo">Demo</a>
         <a href="/privacy/">Privacy</a>
         <a href="/terms/">Terms</a>
       </nav>
     </header>
+    ${demoMode ? `<aside class="demo-banner" aria-label="Demo controls"><span><strong>Demo — sample data, nothing is saved</strong><small> to your study data.</small></span><div><button class="text-button" data-action="reset-demo">Reset demo</button><button class="button button--small button--secondary" data-action="start-real">Start for real</button></div></aside>` : ''}
     ${content}
     <footer>
-      <span>Repair Queue · a private workbench, not a memory diagnosis</span>
+      <span>Repair Queue · repair flashcard prompts from local exports</span>
       <span>Original hero artwork generated for this product · <a href="/privacy/">privacy</a></span>
     </footer>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 }
 
 function loadingView(): void {
-  app.innerHTML = shell('<main id="main" class="loading"><h1>Repair Queue</h1><p>Opening your local workbench…</p></main>');
+  app.innerHTML = shell('<main id="main" class="loading"><h1>Repair weak flashcard prompts</h1><p>Opening your local workbench…</p></main>');
 }
 
 function landingView(): void {
@@ -88,33 +90,34 @@ function landingView(): void {
     <main id="main">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow">An editorial desk for stubborn cards</p>
-          <h1 id="hero-title">Find the prompt<br><em>behind the lapse.</em></h1>
-          <p class="lede">Import an Anki card summary or review log. Repair Queue ranks cards by recent failures and response time—without asking you to judge your memory after every answer.</p>
+          <p class="eyebrow">Repair Queue</p>
+          <h1 id="hero-title">Repair weak<br><em>flashcard prompts.</em></h1>
+          <p class="lede">For self-learners with Anki decks. Find prompts that fail often or take too long to answer.</p>
           <div class="hero-actions">
-            ${saved ? `<button class="button button--primary" data-action="resume">Resume ${data?.repairs.length ? `${data.repairs.length} repairs` : 'queue'} ${icon('arrow')}</button>` : '<button class="button button--primary" data-action="focus-import">Analyse an export ' + icon('arrow') + '</button>'}
-            <button class="text-button" data-action="sample">Try a sample file</button>
+            <button class="button button--primary" data-action="sample">Try it with sample data ${icon('arrow')}</button>
+            <span class="action-help">Opens a ranked sample queue.</span>
+            ${saved ? `<button class="text-button" data-action="resume">Resume your queue</button>` : '<button class="text-button" data-action="focus-import">Analyse your export</button>'}
           </div>
-          <ul class="trust-list" aria-label="Privacy promises"><li>Runs on this device</li><li>Original file preserved</li><li>Score shown in plain language</li></ul>
+          <ul class="trust-list" aria-label="Product facts"><li>Study files stay in your browser</li><li>Original import stays unchanged</li><li>Score details are shown</li></ul>
         </div>
         <figure class="hero-art">
           <picture>
             <source type="image/webp" srcset="/art/card-orchard-768.webp 768w, /art/card-orchard-1536.webp 1536w" sizes="(max-width: 760px) 100vw, 55vw">
             <img src="/art/card-orchard-768.jpg" width="768" height="512" alt="A torn index card growing into two smaller cards in a moonlit paper landscape" fetchpriority="high" decoding="async">
           </picture>
-          <figcaption><span>01</span> One tangled question can become two answerable ones.</figcaption>
+          <figcaption><span>01</span> Split an overloaded prompt into two answerable cards.</figcaption>
         </figure>
       </section>
       <section class="import-zone" id="import" aria-labelledby="import-title">
         <div class="section-number" aria-hidden="true">02 / IMPORT</div>
-        <div class="import-heading"><h2 id="import-title">Bring the evidence,<br>not the deck.</h2><p>Use a CSV or tab-separated export. Useful columns include <code>Front</code>, <code>Reviews</code>, <code>Lapses</code>, <code>Ease</code>, and <code>Time</code>.</p></div>
+        <div class="import-heading"><h2 id="import-title">Analyse your<br>study export.</h2><p>Use a CSV or tab-separated export. Include a prompt column such as <code>Front</code> or <code>Question</code>.</p></div>
         ${importSection}
       </section>
       <section class="method" aria-labelledby="method-title">
-        <p class="eyebrow">The measuring rule</p>
-        <h2 id="method-title">A score you can take apart.</h2>
+        <p class="eyebrow">How the score works</p>
+        <h2 id="method-title">See why each card is flagged.</h2>
         <div class="formula"><div><strong>75</strong><span>Recent failure ratio</span></div><div><strong>20</strong><span>Slow response signal</span></div><div><strong>5</strong><span>Repeated failures</span></div></div>
-        <p>Review logs use each card’s latest 20 attempts. Response time starts adding weight after 4 seconds and tops out at 16 seconds. Missing data never counts against a card.</p>
+        <p>Review logs use each card’s latest 20 attempts. Slow responses add points after 4 seconds. Missing times do not add points.</p>
       </section>
     </main>`, false);
   bindLanding();
@@ -146,12 +149,12 @@ function bindLanding(): void {
     try { preparePreview(await file.text(), file.name); } catch { setImportError('That file could not be read. Try exporting it as UTF-8 CSV.'); }
   });
   app.querySelector('[data-action="focus-import"]')?.addEventListener('click', () => document.querySelector<HTMLElement>('#import')?.scrollIntoView({ behavior: 'smooth' }));
-  app.querySelector('[data-action="sample"]')?.addEventListener('click', () => preparePreview(sample, 'sample-trouble-cards.csv'));
+  app.querySelector('[data-action="sample"]')?.addEventListener('click', () => { void openDemo(); });
   app.querySelector('[data-action="preview-paste"]')?.addEventListener('click', () => preparePreview(app.querySelector<HTMLTextAreaElement>('#csv-text')?.value ?? '', 'pasted-export.csv'));
   app.querySelector('[data-action="cancel-preview"]')?.addEventListener('click', () => { preview = null; importError = ''; landingView(); requestAnimationFrame(() => document.querySelector<HTMLElement>('#import')?.scrollIntoView()); });
   app.querySelector('[data-action="analyse"]')?.addEventListener('click', buildQueue);
   app.querySelector('[data-action="resume"]')?.addEventListener('click', () => { showImporter = false; workbenchView(); });
-  app.querySelector('[data-action="home"]')?.addEventListener('click', (event) => { event.preventDefault(); showImporter = true; landingView(); });
+  bindShell();
 }
 
 function setImportError(message: string): void { importError = message; preview = null; landingView(); requestAnimationFrame(() => document.querySelector<HTMLElement>('#import')?.scrollIntoView()); }
@@ -169,9 +172,78 @@ async function buildQueue(): Promise<void> {
   if (!preview) return;
   const dataset: DataSet = { ...preview, id: crypto.randomUUID(), filename: importFilename, importedAt: new Date().toISOString(), raw: importRaw };
   try {
-    data = await saveDataset(dataset); selectedId = dataset.cards[0]?.id ?? ''; showImporter = false; preview = null; draft = null;
+    data = await saveDataset(dataset, demoMode ? 'demo' : 'real'); selectedId = dataset.cards[0]?.id ?? ''; showImporter = false; preview = null; draft = null;
     workbenchView(); announce(`Queue built from ${dataset.cards.length} cards.`);
   } catch (error) { setImportError(error instanceof Error ? error.message : 'Local storage is unavailable.'); }
+}
+
+function sampleDataSet(): DataSet {
+  const analysed = analyseExport(sample);
+  return {
+    ...analysed,
+    id: crypto.randomUUID(),
+    filename: 'sample-trouble-cards.csv',
+    importedAt: new Date().toISOString(),
+    raw: sample,
+  };
+}
+
+function updateRouteTitle(): void {
+  document.title = demoMode ? 'Demo — Repair Queue' : 'Repair Queue — repair weak flashcards';
+  document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute('href', demoMode
+    ? 'https://forgetting-repair-queue.sociobot.in/demo'
+    : 'https://forgetting-repair-queue.sociobot.in/');
+}
+
+async function openDemo(reset = false, push = true): Promise<void> {
+  demoMode = true;
+  if (push) history.pushState({}, '', '/demo');
+  updateRouteTitle();
+  preview = null; importError = ''; showImporter = false; draft = null; undoState = null;
+  try {
+    if (reset) await clearData('demo');
+    data = await loadData('demo');
+    if (!data) data = await saveDataset(sampleDataSet(), 'demo');
+    selectedId = data.dataset.cards[0]?.id ?? '';
+    workbenchView();
+    if (reset) announce('Demo reset with a fresh sample queue.');
+  } catch (error) {
+    demoMode = false;
+    updateRouteTitle();
+    data = null;
+    importError = error instanceof Error ? error.message : 'The demo could not open local storage.';
+    landingView();
+  }
+}
+
+async function startForReal(push = true): Promise<void> {
+  try { await clearData('demo'); } catch { /* The real workspace is still never touched. */ }
+  demoMode = false;
+  if (push) history.pushState({}, '', '/');
+  updateRouteTitle();
+  preview = null; importError = ''; showImporter = false; draft = null; undoState = null;
+  try {
+    data = await loadData('real');
+    selectedId = data?.dataset.cards[0]?.id ?? '';
+    if (data) workbenchView(); else landingView();
+    announce('Demo closed. Your study data was not changed.');
+  } catch (error) {
+    data = null;
+    importError = error instanceof Error ? error.message : 'Local storage could not be opened.';
+    landingView();
+  }
+}
+
+function bindShell(): void {
+  app.querySelector('[data-action="open-demo"]')?.addEventListener('click', (event) => { event.preventDefault(); void openDemo(); });
+  app.querySelector('[data-action="reset-demo"]')?.addEventListener('click', () => { void openDemo(true, false); });
+  app.querySelector('[data-action="start-real"]')?.addEventListener('click', () => { void startForReal(); });
+  app.querySelector('[data-action="home"]')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (demoMode) { void startForReal(); return; }
+    showImporter = true;
+    landingView();
+  });
 }
 
 function scoreLabel(score: number): string { return score >= 55 ? 'Strong repair signal' : score >= 30 ? 'Worth inspecting' : 'Light signal'; }
@@ -201,7 +273,7 @@ function workbenchView(): void {
   app.innerHTML = shell(`
     <main id="main" class="workbench">
       <section class="work-top">
-        <div><p class="eyebrow">${escapeHtml(data.dataset.filename)} · ${formatDate(data.dataset.importedAt)}</p><h1>Repair Queue</h1></div>
+        <div><p class="eyebrow">${demoMode ? 'Sample queue · ' : ''}${escapeHtml(data.dataset.filename)} · ${formatDate(data.dataset.importedAt)}</p><h1>Repair weak flashcard prompts</h1></div>
         <div class="work-actions">
           <span class="network-state" id="network-state">${navigator.onLine ? 'Ready offline' : 'Offline · changes save locally'}</span>
           <button class="text-button" data-action="new-import">New import</button>
@@ -218,9 +290,10 @@ function workbenchView(): void {
         ${card ? evidencePanel(card) + decisionPanel(card) : '<section class="no-selection"><h2>Queue complete</h2><p>Export your repair plan or start a new import.</p></section>'}
       </div>
       ${licensePanel(hidden)}
-      <section class="data-shelf" aria-labelledby="data-title"><div><p class="eyebrow">Your files, still yours</p><h2 id="data-title">Local data shelf</h2></div><p>The original export and every repair are stored in this browser. Nothing is sent to Repair Queue.</p><div><button class="text-button" data-action="download-original">Download original</button><button class="text-button" data-action="backup">Export JSON backup</button><label class="text-button file-label" for="backup-file">Restore JSON backup</label><input class="visually-hidden" id="backup-file" type="file" accept="application/json,.json"><button class="text-button text-button--danger" data-action="clear">Delete local data</button></div></section>
+      <section class="data-shelf" aria-labelledby="data-title"><div><p class="eyebrow">Local files</p><h2 id="data-title">Manage your local files</h2></div><p>The original export and every repair are stored in this browser. Nothing is sent to Repair Queue.</p><div><button class="text-button" data-action="download-original">Download original</button><button class="text-button" data-action="backup">Export JSON backup</button><label class="text-button file-label" for="backup-file">Restore JSON backup</label><input class="visually-hidden" id="backup-file" type="file" accept="application/json,.json"><button class="text-button text-button--danger" data-action="clear">Delete local data</button></div></section>
     </main>`, true);
   bindWorkbench();
+  bindShell();
 }
 
 function queueItem(card: CardAnalysis, index: number): string {
@@ -277,7 +350,7 @@ function decisionFields(current: Repair): string {
 function licensePanel(hidden: number): string {
   if (!hidden && !unlocked && !licenseNotice) return '';
   if (unlocked) return `<section class="license-panel"><div>${icon('spark')}<div><p class="eyebrow">Workbench Plus</p><h2>Unlimited queue unlocked</h2><p>Every imported card can now enter your repair queue. License checks are cached for 24 hours.</p></div></div><button class="text-button" data-action="remove-license">Remove license from this device</button></section>`;
-  return `<section class="license-panel" id="license" aria-labelledby="license-title"><div>${icon('spark')}<div><p class="eyebrow">One-time unlock · $12 USD</p><h2 id="license-title">Follow every signal, not only the first 15.</h2><p>Workbench Plus unlocks unlimited ranked cards in every local repair queue. The free 15-card repair session, original downloads, backups, and accessibility features stay free.</p><p class="merchant">Sociobot / Dodo is the merchant of record. Refunds are handled through the hosted checkout.</p></div></div><div class="license-actions"><a class="button button--primary" href="${checkoutUrl}">Buy once · $12</a><details><summary>Have a license? Restore it</summary><form id="license-form"><label for="license-token">License token</label><input id="license-token" name="token" autocomplete="off" required><button class="button button--secondary" type="submit">Verify license</button></form></details>${licenseNotice ? `<p class="license-notice" role="status">${escapeHtml(licenseNotice)}</p>` : ''}</div></section>`;
+  return `<section class="license-panel" id="license" aria-labelledby="license-title"><div>${icon('spark')}<div><p class="eyebrow">One-time unlock · $12 USD</p><h2 id="license-title">Unlock every ranked card.</h2><p>Workbench Plus unlocks unlimited ranked cards in every local repair queue. The free 15-card repair session, original downloads, backups, and accessibility features stay free.</p><p class="merchant">Sociobot / Dodo is the merchant of record. Refunds are handled through the hosted checkout.</p></div></div><div class="license-actions"><a class="button button--primary" href="${checkoutUrl}">Buy once · $12</a><details><summary>Have a license? Restore it</summary><form id="license-form"><label for="license-token">License token</label><input id="license-token" name="token" autocomplete="off" required><button class="button button--secondary" type="submit">Verify license</button></form></details>${licenseNotice ? `<p class="license-notice" role="status">${escapeHtml(licenseNotice)}</p>` : ''}</div></section>`;
 }
 
 function captureDraft(): void {
@@ -302,7 +375,6 @@ function bindWorkbench(): void {
   app.querySelector('[data-action="show-license"]')?.addEventListener('click', () => document.querySelector<HTMLElement>('#license')?.scrollIntoView({ behavior: 'smooth' }));
   app.querySelector<HTMLFormElement>('#license-form')?.addEventListener('submit', handleLicenseRestore);
   app.querySelector('[data-action="remove-license"]')?.addEventListener('click', () => { removeLicense(); unlocked = false; licenseNotice = 'License removed from this device.'; workbenchView(); });
-  app.querySelector('[data-action="home"]')?.addEventListener('click', (event) => { event.preventDefault(); showImporter = true; landingView(); });
 }
 
 async function saveCurrentRepair(event: SubmitEvent): Promise<void> {
@@ -313,7 +385,7 @@ async function saveCurrentRepair(event: SubmitEvent): Promise<void> {
   const saved = { ...draft, decision: selectedDecision, updatedAt: new Date().toISOString() };
   const previous = repairFor(saved.cardId) ?? null;
   try {
-    data = await saveRepair(data, saved); undoState = { previous, saved };
+    data = await saveRepair(data, saved, demoMode ? 'demo' : 'real'); undoState = { previous, saved };
     const accessible = (unlocked ? data.dataset.cards : data.dataset.cards.slice(0, FREE_LIMIT));
     const next = accessible.find((card) => !repairFor(card.id));
     if (next) selectedId = next.id;
@@ -327,7 +399,7 @@ async function undoSave(): Promise<void> {
   const repairs = data.repairs.filter((repair) => repair.cardId !== undoState?.saved.cardId);
   if (undoState.previous) repairs.push(undoState.previous);
   data = { ...data, repairs };
-  await replaceData(data); selectedId = undoState.saved.cardId; undoState = null; draft = null; workbenchView(); announce('Last repair restored.');
+  await replaceData(data, demoMode ? 'demo' : 'real'); selectedId = undoState.saved.cardId; undoState = null; draft = null; workbenchView(); announce('Last repair restored.');
 }
 
 async function restoreBackup(event: Event): Promise<void> {
@@ -336,13 +408,14 @@ async function restoreBackup(event: Event): Promise<void> {
   try {
     const parsed = JSON.parse(await file.text()) as Partial<AppData> & { version?: number };
     if (!parsed.dataset?.cards || !Array.isArray(parsed.repairs)) throw new Error('This is not a Repair Queue backup.');
-    data = { dataset: parsed.dataset, repairs: parsed.repairs }; await replaceData(data); selectedId = data.dataset.cards[0]?.id ?? ''; draft = null; workbenchView(); announce('Backup restored.');
+    data = { dataset: parsed.dataset, repairs: parsed.repairs }; await replaceData(data, demoMode ? 'demo' : 'real'); selectedId = data.dataset.cards[0]?.id ?? ''; draft = null; workbenchView(); announce('Backup restored.');
   } catch (error) { announce(error instanceof Error ? error.message : 'Backup could not be restored.'); }
 }
 
 async function deleteLocalData(): Promise<void> {
+  if (demoMode) { await openDemo(true, false); return; }
   if (!confirm('Delete the imported export and all saved repairs from this browser? Downloaded files will not be affected.')) return;
-  await clearData(); data = null; selectedId = ''; showImporter = false; landingView(); announce('Local study data deleted.');
+  await clearData('real'); data = null; selectedId = ''; showImporter = false; landingView(); announce('Local study data deleted.');
 }
 
 async function handleLicenseRestore(event: SubmitEvent): Promise<void> {
@@ -389,9 +462,13 @@ async function registerServiceWorker(): Promise<void> {
 }
 
 async function init(): Promise<void> {
-  loadingView(); captureReturnedLicense(); unlocked = isOptimisticallyUnlocked();
-  try { data = await loadData(); selectedId = data?.dataset.cards[0]?.id ?? ''; } catch (error) { importError = error instanceof Error ? error.message : 'Local storage could not be opened.'; }
-  if (data) workbenchView(); else landingView();
+  loadingView(); captureReturnedLicense(); unlocked = isOptimisticallyUnlocked(); updateRouteTitle();
+  if (demoMode) {
+    await openDemo(false, false);
+  } else {
+    try { data = await loadData('real'); selectedId = data?.dataset.cards[0]?.id ?? ''; } catch (error) { importError = error instanceof Error ? error.message : 'Local storage could not be opened.'; }
+    if (data) workbenchView(); else landingView();
+  }
   void verifyLicense().then((verdict) => {
     if (verdict.reason === 'missing' || verdict.reason === 'offline') return;
     const changed = unlocked !== verdict.valid; unlocked = verdict.valid;
@@ -403,4 +480,9 @@ async function init(): Promise<void> {
 
 window.addEventListener('online', updateNetwork);
 window.addEventListener('offline', updateNetwork);
+window.addEventListener('popstate', () => {
+  const nextDemo = location.pathname === '/demo' || new URLSearchParams(location.search).get('demo') === '1';
+  if (nextDemo === demoMode) return;
+  void (nextDemo ? openDemo(false, false) : startForReal(false));
+});
 void init();

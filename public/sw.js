@@ -23,16 +23,26 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).then((response) => {
       const copy = response.clone();
-      caches.open(`${VERSION}-pages`).then((cache) => cache.put(request, copy));
+      event.waitUntil(caches.open(`${VERSION}-pages`).then((cache) => cache.put(request, copy)));
       return response;
-    }).catch(async () => (await caches.match(request)) || (await caches.match('/index.html')) || caches.match('/offline.html')));
+    }).catch(async () => {
+      const pages = await caches.open(`${VERSION}-pages`);
+      const shell = await caches.open(`${VERSION}-shell`);
+      return (await pages.match(request, { ignoreVary: true })) || (await shell.match('/index.html', { ignoreVary: true })) || (await shell.match('/offline.html', { ignoreVary: true }));
+    }));
     return;
   }
 
-  event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-    if (response.ok) caches.open(`${VERSION}-assets`).then((cache) => cache.put(request, response.clone()));
+  event.respondWith((async () => {
+    const shell = await caches.open(`${VERSION}-shell`);
+    const precached = await shell.match(request, { ignoreVary: true });
+    if (precached) return precached;
+    const cached = await caches.match(request, { ignoreVary: true });
+    if (cached) return cached;
+    const response = await fetch(request);
+    if (response.ok) event.waitUntil(caches.open(`${VERSION}-assets`).then((cache) => cache.put(request, response.clone())));
     return response;
-  })));
+  })());
 });
 
 self.addEventListener('message', (event) => { if (event.data === 'SKIP_WAITING') self.skipWaiting(); });

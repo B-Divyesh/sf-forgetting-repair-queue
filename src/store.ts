@@ -2,7 +2,11 @@ import type { AppData, DataSet, Repair } from './types';
 
 const DB_NAME = 'repair-queue-local';
 const STORE = 'workspace';
-const DATA_KEY = 'active';
+type StorageScope = 'real' | 'demo';
+
+function dataKey(scope: StorageScope): string {
+  return scope === 'demo' ? 'demo:active' : 'active';
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -26,26 +30,26 @@ async function transact<T>(mode: IDBTransactionMode, action: (store: IDBObjectSt
   });
 }
 
-export async function loadData(): Promise<AppData | null> {
-  return (await transact('readonly', (store) => store.get(DATA_KEY))) as AppData | null;
+export async function loadData(scope: StorageScope = 'real'): Promise<AppData | null> {
+  return (await transact('readonly', (store) => store.get(dataKey(scope)))) as AppData | null;
 }
 
-export async function saveDataset(dataset: DataSet): Promise<AppData> {
+export async function saveDataset(dataset: DataSet, scope: StorageScope = 'real'): Promise<AppData> {
   const data = { dataset, repairs: [] };
-  await transact('readwrite', (store) => store.put(data, DATA_KEY));
+  await transact('readwrite', (store) => store.put(data, dataKey(scope)));
   return data;
 }
 
-export async function saveRepair(data: AppData, repair: Repair): Promise<AppData> {
+export async function saveRepair(data: AppData, repair: Repair, scope: StorageScope = 'real'): Promise<AppData> {
   const next = { ...data, repairs: [...data.repairs.filter((item) => item.cardId !== repair.cardId), repair] };
-  await transact('readwrite', (store) => store.put(next, DATA_KEY));
+  await transact('readwrite', (store) => store.put(next, dataKey(scope)));
   return next;
 }
 
-export async function replaceData(data: AppData): Promise<void> {
-  await transact('readwrite', (store) => store.put(data, DATA_KEY));
+export async function replaceData(data: AppData, scope: StorageScope = 'real'): Promise<void> {
+  await transact('readwrite', (store) => store.put(data, dataKey(scope)));
 }
 
-export async function clearData(): Promise<void> {
-  await transact('readwrite', (store) => store.delete(DATA_KEY));
+export async function clearData(scope: StorageScope = 'real'): Promise<void> {
+  await transact('readwrite', (store) => store.delete(dataKey(scope)));
 }

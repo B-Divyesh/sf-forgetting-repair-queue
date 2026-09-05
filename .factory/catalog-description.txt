@@ -1,0 +1,1 @@
+Repair weak flashcard prompts from local Anki exports.

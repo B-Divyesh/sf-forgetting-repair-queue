@@ -1,19 +1,22 @@
 # Repair Queue
 
-Repair Queue is a private, offline-capable workbench for self-learners with established Anki decks. It turns card-summary or review-log exports into an explainable list of prompts worth revising, splitting, suspending, or archiving. It does not schedule reviews or judge a learner's memory.
+Repair Queue helps self-learners repair weak flashcard prompts from local Anki exports. It shows why a card is flagged, then records a revise, split, suspend, or archive decision. It does not replace Anki scheduling or diagnose memory or learning conditions.
 
-Live: <https://forgetting-repair-queue.sociobot.in>
+Live app: <https://forgetting-repair-queue.sociobot.in>
 
-## What it does
+## First action
 
-- Reads UTF-8 CSV, TSV, or semicolon-separated card summaries and Anki-style review logs.
-- Recognizes common columns such as `Front`, `Back`, `cid`, `ease`, `time`, `Reviews`, and `Lapses`.
-- Groups review logs by card and scores the latest 20 entries: 75% failure ratio, 20% response time, 5% repeat burden.
-- Saves repair decisions and notes in IndexedDB, preserves the original export, and produces CSV and JSON downloads.
-- Installs as a PWA and reopens the saved queue offline.
-- Gives everyone a complete 15-card repair session. A $12 one-time Workbench Plus license unlocks unlimited queue depth through Sociobot billing.
+Open <https://forgetting-repair-queue.sociobot.in/demo> or select **Try it with sample data**. One click opens a ranked 18-card queue with a persistent demo label. The demo uses its own IndexedDB key and never replaces the real workspace. **Reset demo** replaces the sample workspace. **Start for real** discards it.
 
-Study data never leaves the browser. Only an optional license token is sent to the Sociobot verification endpoint. See [`/privacy`](https://forgetting-repair-queue.sociobot.in/privacy/) and [`/terms`](https://forgetting-repair-queue.sociobot.in/terms/).
+## What is proven
+
+- Study files stay in the browser during a sample repair; the browser test records only same-origin requests.
+- The original import can be downloaded unchanged after a repair.
+- A saved repair plan can be exported as CSV.
+- The sample queue reopens offline after the first visit.
+- Workbench Plus is a $12 USD one-time purchase for unlimited queue depth. The free queue, downloads, backups, and accessibility features stay available.
+
+The corresponding outcome checks are documented in [`.factory/claims.json`](.factory/claims.json). The demo storage boundary and sample contents are documented in [`.factory/demo.md`](.factory/demo.md).
 
 ## Run locally
 
@@ -24,24 +27,35 @@ npm ci
 npm run dev
 ```
 
-Then open the URL printed by Vite. The app includes a sample export for a quick end-to-end check.
+Open the URL printed by Vite. Use `/demo` for the isolated sample queue.
 
-## Test and build
+## Verify and build
 
 ```sh
-npm test            # parser and scoring unit tests
-npm run build       # reproducible static output in ./dist
-npm run test:e2e    # Chromium workflow, axe, 390px, legal, and offline checks
-npm run test:all    # all of the above
+npm test
+npm run build
+npm run test:e2e
+npm run test:all
 ```
 
-The exact deployment build command is `npm run build`. Deploy the contents of `dist/`; `dist/index.html` is the entry point. No server, environment variable, product ID, or secret is required at runtime.
+Run every public claim from a clean checkout after `npm ci`:
 
-## Supported exports
+```sh
+npm run test:claims -- --grep @claim:demo-one-click
+npm run test:claims -- --grep @claim:demo-isolation
+npm run test:claims -- --grep @claim:score-explanation
+npm run test:claims -- --grep @claim:local-browser-only
+npm run test:claims -- --grep @claim:original-download
+npm run test:claims -- --grep @claim:csv-export
+npm run test:claims -- --grep @claim:one-time-unlock
+npm run test:claims -- --grep @claim:offline-reload
+```
 
-A card-summary file needs a prompt column such as `Front`, `Question`, or `Prompt`. Review and failure columns improve the score; a response-time column is optional. A review log needs a card identifier (`cid` or `card_id`) and rating (`ease`, `rating`, or `button`). Prompts absent from an Anki revlog can be filled in during repair.
+`npm run build` produces the deployable static PWA in `dist/`. Deploy its contents with `dist/index.html` at the root. The included `staticwebapp.config.json` sets the response policy, demo route, 404 page, MIME type, and cache headers.
 
-The original export is retained byte-for-byte in IndexedDB. Starting a new analysis replaces the active local workspace, so download a backup first if it should be kept.
+## Privacy and terms
+
+Study exports and repair decisions are stored in IndexedDB on the device. An optional Workbench Plus license token is checked with Sociobot and cached locally. Read the [privacy policy](https://forgetting-repair-queue.sociobot.in/privacy/) and [terms](https://forgetting-repair-queue.sociobot.in/terms/).
 
 ## Product references
 

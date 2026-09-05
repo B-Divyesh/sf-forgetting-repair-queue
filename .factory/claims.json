@@ -1,0 +1,58 @@
+[
+  {
+    "id": "demo-one-click",
+    "claim": "Try it with sample data opens a ranked repair queue in one click.",
+    "where": "Landing page primary action and README",
+    "test": "npm run test:claims -- --grep @claim:demo-one-click",
+    "sandbox": "Fresh browser state; click the landing-page sample action; assert the ranked 18-card queue and persistent demo label appear without a build step."
+  },
+  {
+    "id": "demo-isolation",
+    "claim": "Demo changes do not replace your study data.",
+    "where": "Demo banner and README",
+    "test": "npm run test:claims -- --grep @claim:demo-isolation",
+    "sandbox": "Create a one-card real queue, edit the sample queue, leave demo, and assert the one-card real queue returns unchanged."
+  },
+  {
+    "id": "score-explanation",
+    "claim": "Each flagged card shows the failure, response-time, and repeat evidence behind its score.",
+    "where": "Landing page facts, score panel, and README",
+    "test": "npm run test:claims -- --grep @claim:score-explanation",
+    "sandbox": "Open the shipped sample queue and assert the visible evidence sentence and all three score components for the first ranked card."
+  },
+  {
+    "id": "local-browser-only",
+    "claim": "Study files stay in your browser during a sample repair.",
+    "where": "Landing page facts, Privacy page, and README",
+    "test": "npm run test:claims -- --grep @claim:local-browser-only",
+    "sandbox": "Record every browser request from landing through a saved sample repair; assert every request is same-origin."
+  },
+  {
+    "id": "original-download",
+    "claim": "Download the original import unchanged after making a repair.",
+    "where": "Workbench data shelf and README",
+    "test": "npm run test:claims -- --grep @claim:original-download",
+    "sandbox": "Edit a sample repair, download the original, and assert it contains the original source rather than the edited prompt."
+  },
+  {
+    "id": "csv-export",
+    "claim": "Export a saved repair plan as CSV.",
+    "where": "Workbench Export plan button and README",
+    "test": "npm run test:claims -- --grep @claim:csv-export",
+    "sandbox": "Save one sample repair, download the plan, and assert a CSV header plus one repair row."
+  },
+  {
+    "id": "one-time-unlock",
+    "claim": "Workbench Plus is a $12 USD one-time purchase for unlimited queue depth.",
+    "where": "Workbench Plus panel, Terms, and README",
+    "test": "npm run test:claims -- --grep @claim:one-time-unlock",
+    "sandbox": "Open the sample queue and assert the displayed one-time price, unlimited-queue feature, and hosted Sociobot checkout destination."
+  },
+  {
+    "id": "offline-reload",
+    "claim": "The sample queue reopens offline after the first visit.",
+    "where": "README",
+    "test": "npm run test:claims -- --grep @claim:offline-reload",
+    "sandbox": "Use a dedicated fresh browser context; load /demo, wait for its service worker cache, set offline, reload, and assert the saved demo queue remains usable."
+  }
+]
