@@ -9,7 +9,7 @@ Live URL: <https://forgetting-repair-queue.sociobot.in>
 ## Implementation and deployment
 
 - Final implementation SHA: `056be8afa9da8e0eda29ac285b32f45a3860a4ed`
-- Documentation SHA: recorded by the follow-up handoff commit.
+- Documentation evidence SHA: `84c84713b57bb6dc3c86abe49e416dab6eb61745` (recorded after the implementation commit).
 - Deployment: static PWA deployed from `dist/` to the existing one-replica `sf-forgetting-repair-queue` Azure Static Web App. No data service, volume, environment, or replica setting was changed.
 - Live root SHA-256: `33af928afd5097577078f62861c8f62aa50704315e3195ed2104e28fa32ac408`, matching `dist/index.html` from the final implementation.
 
